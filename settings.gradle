@@ -1,0 +1,4 @@
+include ':common'
+include ':server'
+include ':client'
+rootProject.name = "BLE Demo"
