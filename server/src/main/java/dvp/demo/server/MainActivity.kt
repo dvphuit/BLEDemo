@@ -4,82 +4,83 @@ import android.bluetooth.BluetoothManager
 import android.content.Context
 import android.os.Bundle
 import android.util.Log
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.widget.doOnTextChanged
-import dvp.demo.ble.advertising.BLEPeripheralAdvertising
-import dvp.demo.ble.utils.PERMISSION_GRANTED
-import dvp.demo.ble.utils.checkPermissionGranted
+import dvp.demo.ble.BLEPeripheral
 import kotlinx.android.synthetic.main.activity_main.*
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.conflate
+import kotlinx.coroutines.launch
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), IPresenter {
     private val bluetoothManager by lazy {
         this.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
     }
 
     private val blePeripheral by lazy {
-        BLEPeripheralAdvertising(this, bluetoothManager)
+        BLEPeripheral(this, bluetoothManager)
     }
 
-    private var isAlreadyAdvertising = false
-
-    private var sendValue = "Nothing"
+    private var isAlreadyStarted = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-
-        sendingValue.doOnTextChanged { text, _, _, _ ->
-            updateSentValue(text.toString())
-        }
-
-        switchPeripheral.setOnCheckedChangeListener { _, isChecked -> setPeripheralSwitch(isChecked) }
-    }
-
-    private fun setPeripheralSwitch(isChecked: Boolean) {
-        when (isChecked) {
-            true -> {
-                when (val resultCheckPermission = checkPermissionGranted(this)) {
-                    PERMISSION_GRANTED -> {
-                        updateSentValue("0000")
-                    }
-                    else -> {
-                        Toast.makeText(this, resultCheckPermission, Toast.LENGTH_SHORT).show()
-                    }
-                }
-            }
-            false -> {
-                stopAdvertise()
-                isAlreadyAdvertising = false
-                sendValue = "Nothing"
+        switchPeripheral.setOnCheckedChangeListener { _, isChecked ->
+            if (isChecked) {
+                startAdvertising("BLE", 10)
+            } else {
+                stopAdvertising()
             }
         }
     }
 
-    private fun updateSentValue(text: String) {
-        when {
-            !switchPeripheral.isChecked -> {
-                sendValue = "Nothing"
+    override fun startAdvertising(value: String, freqPerSec: Int) {
+        startBlePeripheral(value)
+        observeWrite()
+    }
+
+    override fun onReceivedValue(value: String) {
+        when (value) {
+            "RED" -> {
+                ledView.setBackgroundColor(getColor(R.color.colorRed))
             }
-            text.isBlank() || text.length < 4 -> {
-                Log.d("TEST", "input error")
+            "GREEN" -> {
+                ledView.setBackgroundColor(getColor(R.color.colorGreen))
             }
             else -> {
-                sendValue = text
-                startAdvertise()
+                ledView.setBackgroundColor(getColor(R.color.colorGrey))
             }
         }
     }
 
-    private fun startAdvertise() {
-        stopAdvertise()
-        blePeripheral.start(sendValue)
-        isAlreadyAdvertising = true
-    }
-
-    private fun stopAdvertise() {
-        if (isAlreadyAdvertising) {
+    override fun stopAdvertising() {
+        if (isAlreadyStarted) {
             blePeripheral.stop()
         }
+    }
+
+    private fun startBlePeripheral(value: String) {
+        if (isAlreadyStarted) {
+            blePeripheral.stop()
+        }
+        blePeripheral.start(value)
+        isAlreadyStarted = true
+    }
+
+    private fun observeWrite() {
+        GlobalScope.launch {
+            blePeripheral.getWriteResponseFlow()
+                .conflate()
+                .collect {
+                    Log.e("TEST", "SERVER READ -> $it")
+                    onReceivedValue(it)
+                }
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        stopAdvertising()
     }
 }
