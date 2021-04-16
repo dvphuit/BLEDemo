@@ -119,13 +119,16 @@ class MainActivity : AppCompatActivity(), IPresenter {
     }
 
     override fun send(value: String) {
-        if (bluetoothGatt?.connect() == true) {
-            updateStatus("Sending: ...$value")
-            val characteristic =
-                bluetoothGatt!!.getService(UUID_SERVICE).getCharacteristic(UUID_DATA)
+        bluetoothGatt?.let {
+            if (it.services.isEmpty()) {
+                it.discoverServices()
+                return@let
+            }
+
+            val characteristic = it.getService(UUID_SERVICE).getCharacteristic(UUID_DATA)
             characteristic.writeType = BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE
             characteristic.value = value.toByteArray(Charsets.UTF_8)
-            bluetoothGatt!!.writeCharacteristic(characteristic)
+            it.writeCharacteristic(characteristic)
         }
     }
 
