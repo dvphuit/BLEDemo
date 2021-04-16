@@ -70,6 +70,7 @@ class MainActivity : AppCompatActivity(), IPresenter {
     }
 
     override fun onReceivedValue(value: String) {
+        Log.d("TEST", "onReceivedValue $value")
         when (value) {
             "RED" -> {
                 ledView.setBackgroundColor(getColor(R.color.colorRed))

@@ -120,7 +120,7 @@ class MainActivity : AppCompatActivity(), IPresenter {
 
     override fun send(value: String) {
         if (bluetoothGatt?.connect() == true) {
-            updateStatus("Sending: $value")
+            updateStatus("Sending: ...$value")
             val characteristic =
                 bluetoothGatt!!.getService(UUID_SERVICE).getCharacteristic(UUID_DATA)
             characteristic.writeType = BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE
@@ -134,10 +134,10 @@ class MainActivity : AppCompatActivity(), IPresenter {
             if (isConnected) {
                 send("disconnect")
                 updateStatus("Disconnect")
-                updateStatus("---------------------- delay 5s")
+                updateStatus("---------------------- delay 3s")
                 bluetoothGatt?.close()
                 isConnected = false
-                delay(1000) //stable in my case
+                delay(3000) // onScannerRegistered() - status=6 scannerId=-1 mScannerId=0
                 start()
             }
         }

@@ -51,12 +51,13 @@ class BLECentral(adapter: BluetoothAdapter) {
                 super.onScanResult(callbackType, result)
 //                Log.e("TEST", "result ${result.device}")
                 scanResult?.invoke(result.device)
+//                Log.d("TEST", "result $result")
             }
 
             override fun onScanFailed(errorCode: Int) {
                 super.onScanFailed(errorCode)
                 Log.e("TEST", "scan failed $errorCode")
-//                startScan(value, scanResult!!)
+//                startScan(value, scanResult!!) // i never seem this triggered
             }
         }
     }
