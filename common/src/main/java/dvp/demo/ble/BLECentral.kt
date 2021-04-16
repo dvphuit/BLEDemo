@@ -49,6 +49,7 @@ class BLECentral(adapter: BluetoothAdapter) {
         return object : ScanCallback() {
             override fun onScanResult(callbackType: Int, result: ScanResult) {
                 super.onScanResult(callbackType, result)
+//                Log.e("TEST", "result ${result.device}")
                 scanResult?.invoke(result.device)
             }
 

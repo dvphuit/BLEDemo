@@ -3,12 +3,13 @@ package dvp.demo.client
 import android.annotation.SuppressLint
 import android.bluetooth.*
 import android.content.Context
+import android.content.pm.PackageManager
 import android.os.Bundle
 import android.view.View
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import dvp.demo.ble.BLECentral
-import dvp.demo.ble.utils.UUID_DATA
-import dvp.demo.ble.utils.UUID_SERVICE
+import dvp.demo.ble.utils.*
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
@@ -37,11 +38,35 @@ class MainActivity : AppCompatActivity(), IPresenter {
         bleCentral = BLECentral(bluetoothAdapter)
 
         switchScan.setOnCheckedChangeListener { _, isChecked ->
+
+            if (!isPassPermissionAndSetting()) {
+                switchScan.isChecked = false
+                return@setOnCheckedChangeListener
+            }
+
             if (isChecked) {
                 start()
             } else {
                 stop()
             }
+        }
+    }
+
+    private fun isPassPermissionAndSetting(): Boolean {
+        return when (checkPermissionGranted(this)) {
+            "Location" -> {
+                reqLocationPermission()
+                false
+            }
+            "GPS" -> {
+                reqGPSEnable()
+                false
+            }
+            "Bluetooth" -> {
+                reqBluetoothEnable()
+                false
+            }
+            else -> true
         }
     }
 
@@ -96,7 +121,8 @@ class MainActivity : AppCompatActivity(), IPresenter {
     override fun send(value: String) {
         if (bluetoothGatt?.connect() == true) {
             updateStatus("Sending: $value")
-            val characteristic = bluetoothGatt!!.getService(UUID_SERVICE).getCharacteristic(UUID_DATA)
+            val characteristic =
+                bluetoothGatt!!.getService(UUID_SERVICE).getCharacteristic(UUID_DATA)
             characteristic.writeType = BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE
             characteristic.value = value.toByteArray(Charsets.UTF_8)
             bluetoothGatt!!.writeCharacteristic(characteristic)
@@ -106,11 +132,12 @@ class MainActivity : AppCompatActivity(), IPresenter {
     override fun disconnect() {
         GlobalScope.launch {
             if (isConnected) {
+                send("disconnect")
                 updateStatus("Disconnect")
-                updateStatus("----------------------")
+                updateStatus("---------------------- delay 5s")
                 bluetoothGatt?.close()
                 isConnected = false
-                delay(1000)
+                delay(1000) //stable in my case
                 start()
             }
         }
@@ -137,7 +164,7 @@ class MainActivity : AppCompatActivity(), IPresenter {
                 BluetoothGatt.GATT_SUCCESS -> {
                     updateStatus("GATT: Services discovered")
                     job = GlobalScope.launch {
-                        delay(1000)
+//                        delay(1000)
                         send("RED")
                         updateStatus("Sent: RED")
                         delay(1000)

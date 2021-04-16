@@ -1,7 +1,5 @@
 package dvp.demo.client
 
-import android.bluetooth.BluetoothDevice
-
 /**
  * @author dvphu on 15,April,2021
  */
@@ -9,6 +7,7 @@ import android.bluetooth.BluetoothDevice
 interface IPresenter {
 
     fun start()
+
     fun stop()
 
     fun startScanFor(value: String)
@@ -20,4 +19,5 @@ interface IPresenter {
     fun send(value: String)
 
     fun disconnect()
+
 }

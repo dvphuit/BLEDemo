@@ -6,6 +6,10 @@ import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import dvp.demo.ble.BLEPeripheral
+import dvp.demo.ble.utils.checkPermissionGranted
+import dvp.demo.ble.utils.reqBluetoothEnable
+import dvp.demo.ble.utils.reqGPSEnable
+import dvp.demo.ble.utils.reqLocationPermission
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.flow.collect
@@ -27,6 +31,12 @@ class MainActivity : AppCompatActivity(), IPresenter {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         switchPeripheral.setOnCheckedChangeListener { _, isChecked ->
+
+            if (!isPassPermissionAndSetting()) {
+                switchPeripheral.isChecked = false
+                return@setOnCheckedChangeListener
+            }
+
             if (isChecked) {
                 startAdvertising("BLE", 10)
             } else {
@@ -34,6 +44,25 @@ class MainActivity : AppCompatActivity(), IPresenter {
             }
         }
     }
+
+    private fun isPassPermissionAndSetting(): Boolean {
+        return when (checkPermissionGranted(this)) {
+            "Location" -> {
+                reqLocationPermission()
+                false
+            }
+            "GPS" -> {
+                reqGPSEnable()
+                false
+            }
+            "Bluetooth" -> {
+                reqBluetoothEnable()
+                false
+            }
+            else -> true
+        }
+    }
+
 
     override fun startAdvertising(value: String, freqPerSec: Int) {
         startBlePeripheral(value)
@@ -73,7 +102,6 @@ class MainActivity : AppCompatActivity(), IPresenter {
             blePeripheral.getWriteResponseFlow()
                 .conflate()
                 .collect {
-                    Log.e("TEST", "SERVER READ -> $it")
                     onReceivedValue(it)
                 }
         }

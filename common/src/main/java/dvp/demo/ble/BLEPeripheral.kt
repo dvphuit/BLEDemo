@@ -41,7 +41,7 @@ class BLEPeripheral(private val context: Context, private val bluetoothManager: 
 
         val settings = AdvertiseSettings.Builder().apply {
             setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_LOW_LATENCY) //100ms
-            setTxPowerLevel(AdvertiseSettings.ADVERTISE_TX_POWER_HIGH)
+            setTxPowerLevel(AdvertiseSettings.ADVERTISE_TX_POWER_MEDIUM)
             setConnectable(true)
             setTimeout(0)
         }.build()
@@ -74,20 +74,19 @@ class BLEPeripheral(private val context: Context, private val bluetoothManager: 
     }
 
     private fun createService(): BluetoothGattService {
-        val bluetoothGattService = BluetoothGattService(
+        val service = BluetoothGattService(
             UUID_SERVICE,
             BluetoothGattService.SERVICE_TYPE_PRIMARY
         )
 
-        val bluetoothGattCharacteristic = BluetoothGattCharacteristic(
+        val writeChar = BluetoothGattCharacteristic(
             UUID_DATA,
             BluetoothGattCharacteristic.PROPERTY_READ or BluetoothGattCharacteristic.PROPERTY_NOTIFY or BluetoothGattCharacteristic.PROPERTY_WRITE,
             BluetoothGattCharacteristic.PERMISSION_READ or BluetoothGattCharacteristic.PERMISSION_WRITE
         )
 
-        bluetoothGattService.addCharacteristic(bluetoothGattCharacteristic)
-
-        return bluetoothGattService
+        service.addCharacteristic(writeChar)
+        return service
     }
 
     fun getWriteResponseFlow(): Flow<String> = channel.consumeAsFlow()
